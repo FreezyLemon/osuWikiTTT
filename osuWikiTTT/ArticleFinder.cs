@@ -27,10 +27,10 @@ namespace osuWikiTTT
             if (rootDir.Name != "wiki")
                 throw new ArgumentException("Select the 'wiki' directory path!");
 
-            addArticlesFromDir(rootDir);
+            GetArticlesFromDir(rootDir);
         }
 
-        private static void addArticlesFromDir(DirectoryInfo directory, Article parentArticle = null)
+        private static void GetArticlesFromDir(DirectoryInfo directory, Article parentArticle = null)
         {
             var subDirectories = directory.GetDirectories().Where(d => firstCharRegex.IsMatch(d.Name)).ToList();
 
@@ -38,20 +38,16 @@ namespace osuWikiTTT
             {
                 var newArticle = new Article(subDir.Name.Replace('_', ' '));
 
+                foreach (var file in subDir.EnumerateFiles("*.md"))
+                    newArticle.AddTranslation(Path.GetFileNameWithoutExtension(file.Name));
+
                 if (parentArticle != null)
                     newArticle.SetParentArticle(parentArticle);
 
-                // todo: add languages
-
                 allArticles.Add(newArticle);
 
-                addArticlesFromDir(subDir, newArticle);
+                GetArticlesFromDir(subDir, newArticle);
             }
-        }
-
-        public static void CreateGFM()
-        {
-
         }
     }
 }

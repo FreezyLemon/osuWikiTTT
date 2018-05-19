@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace osuWikiTTT
 {
@@ -12,25 +10,27 @@ namespace osuWikiTTT
         private ushort indentationAmount = 0;
         private string indentation => string.Concat(Enumerable.Repeat(" ", indentationAmount));
 
-        public string CreateGFM(IEnumerable<Article> rootArticles)
+        public string CreateGFM(IEnumerable<Article> rootArticles, string locale = null)
         {
             Reset();
-            GFMLoop(rootArticles);
+            GFMLoop(rootArticles, locale);
 
             return output;
         }
 
-        private void GFMLoop(IEnumerable<Article> articles)
+        private void GFMLoop(IEnumerable<Article> articles, string locale)
         {
             foreach (var article in articles)
             {
-                WriteLine($"- [ ] {article.Name}");
+                char checkmark = (locale != null & article.Translations.Any(t => t.Language == locale)) ? 'x' : ' ';
+
+                WriteLine($"- [{checkmark}] {article.Name}");
 
                 if (article.SubArticles.Count > 0)
                 {
-                    indentationAmount += 2;
-                    GFMLoop(article.SubArticles);
-                    indentationAmount -= 2;
+                    indentationAmount += 4;
+                    GFMLoop(article.SubArticles, locale);
+                    indentationAmount -= 4;
                 }       
             }
         }
