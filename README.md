@@ -41,9 +41,6 @@ The exact usage depends on the platform and type of framework used. Though .NET 
 
 This tool will only take very simple input parameters:
 
-- `wikiDir` specifies the `wiki` root directory, containing all articles.
-- `outputLocation` is optional and specifies a file path and/or name to write the output markdown text to. If this is omitted, it will output to `./result.md`.
-
 ### Usage examples
 
 #### .NET Framework (Windows)
