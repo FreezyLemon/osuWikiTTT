@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace osuWikiTTT
@@ -10,9 +11,27 @@ namespace osuWikiTTT
         private ushort indentationAmount = 0;
         private string indentation => string.Concat(Enumerable.Repeat(" ", indentationAmount));
 
-        public string CreateGFM(IEnumerable<Article> rootArticles, string locale = null)
+        public string CreateGFM(IEnumerable<Article> rootArticles, string locale)
         {
             Reset();
+
+            var culture = new CultureInfo(locale);
+
+            Write(
+$@"<!-- Automatically created by the osuWikiTTT -->
+
+# {culture.EnglishName} Wiki Completion
+
+## Notes <!-- Delete these if you want to -->
+
+1. `- [ ] About (5)` -> The article 'About' has not been translated to {culture.EnglishName} yet, and the english version is 5 lines long.
+2. `- [x] Beatmap Editor (20/22)` -> The article 'Beatmap Editor' has been translated to {culture.EnglishName}. The translated version has 20 lines, and the english one has 22.
+
+## Article Listing
+
+"
+            );
+
             GFMLoop(rootArticles, locale);
 
             return output;
@@ -22,9 +41,25 @@ namespace osuWikiTTT
         {
             foreach (var article in articles)
             {
-                char checkmark = (locale != null & article.Translations.Any(t => t.Language == locale)) ? 'x' : ' ';
+                var translation = locale != null ? article.Translations.SingleOrDefault(t => t.Language == locale) : null;
+                char checkmark = (translation != null) ? 'x' : ' ';
 
-                WriteLine($"- [{checkmark}] {article.Name}");
+                string toWrite = $"- [{checkmark}] {article.Name}";
+
+                if (locale == "en")
+                    toWrite += $" ({translation.LineCount})";
+                else
+                {
+                    // null check only for safety, it should never be null
+                    int englishLineCount = article.Translations.SingleOrDefault(t => t.Language == "en")?.LineCount ?? 0;
+
+                    if (translation == null)
+                        toWrite += $" ({englishLineCount})";
+                    else
+                        toWrite += $" ({translation.LineCount}/{englishLineCount})";
+                }
+
+                WriteLine(toWrite);
 
                 if (article.SubArticles.Count > 0)
                 {
