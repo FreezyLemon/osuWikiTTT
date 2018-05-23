@@ -14,6 +14,8 @@ namespace osuWikiTTT
             Name = name;
         }
 
+        internal void AddTranslation(string locale, int lineCount) => Translations.Add(new Translation(locale, lineCount, this));
+
         internal void AddTranslation(string locale) => Translations.Add(new Translation(locale, this));
 
         internal void SetParentArticle(Article parentArticle)
@@ -70,14 +72,28 @@ namespace osuWikiTTT
         public class Translation
         {
             internal Translation(string language, Article article)
+                : this(language, null, article)
+            {
+            }
+
+            internal Translation(string language, int lineCount, Article article)
+                : this(language, (int?)lineCount, article)
+            {   
+            }
+
+            private Translation(string language, int? lineCount, Article article)
             {
                 Language = language;
+                LineCount = lineCount;
                 Article = article;
             }
 
             public Article Article { get; }
             public string Language { get; }
+            public int? LineCount { get; } = 0;
             public string Filename => Language + ".md";
+
+            public override string ToString() => $"[{Language}] {Article.Name}";
         }
     }
 }

@@ -8,8 +8,9 @@ namespace osuWikiTTT
     public class Program
     {
         private static string wikiDirectory;
-        private static string outputFilename;
-        private static string locale;
+        private static string outputFilename = "result.md";
+        private static string locale = "en";
+        private static bool countArticles = false;
 
         public static void Main(string[] args)
         {
@@ -26,7 +27,7 @@ namespace osuWikiTTT
             }
 
             Console.WriteLine($"Trying to read files/folders from {wikiDirectory}...");
-            ArticleFinder.Initialize(wikiDirectory);
+            ArticleFinder.Initialize(wikiDirectory, countArticles);
             Console.WriteLine($"Found {ArticleFinder.Articles.Count} articles.");
             Console.WriteLine($"Creating GitHub-flavored Markdown from all articles...");
 
@@ -39,7 +40,8 @@ namespace osuWikiTTT
         {
             var options = new OptionSet
             {
-                { "<>|d|dir=", "the path of the wiki directory.", w =>
+                {
+                    "<>|d|dir=", "the path of the wiki directory.", w =>
                     {
                         if (string.IsNullOrWhiteSpace(w))
                             throw new OptionException("Please enter a valid wiki directory!", "<>|d|dir=");
@@ -50,11 +52,13 @@ namespace osuWikiTTT
                         wikiDirectory = w;
                     }
                 },
-                { "o|output=", "the path of the output file, relative to the current directory. defaults to './result.md'.", o => outputFilename = o },
-                { "l|locale=", "the locale you want to check. Does *not* check for locale if empty.", l =>
+                {
+                    "o|output=", "the path of the output file, relative to the current directory. defaults to './result.md'.", o => outputFilename = o },
+                {
+                    "l|locale=", "the locale you want to check. Default is 'en'.", l =>
                     {
                         if (string.IsNullOrWhiteSpace(l))
-                            throw new OptionException("Please enter a valid locale string!", "l|locale=");
+                            return;
 
                         if (l.Length != 2)
                             throw new OptionException("Locale names have to be 2 characters long!", "l|locale=");
@@ -62,13 +66,13 @@ namespace osuWikiTTT
                         locale = l;
                     }
                 },
+                { "c|count", "specify this option to count the number of lines per article.", c => countArticles = c != null },
             };
 
             var result = options.Parse(args);
 
-            // set defaults here
-            if (string.IsNullOrEmpty(outputFilename))
-                outputFilename = "result.md";
+            if (string.IsNullOrEmpty(wikiDirectory))
+                throw new OptionException("Please specify at least one argument pointing to the wiki directory!", "<>|d|dir");
 
             return result;
         }

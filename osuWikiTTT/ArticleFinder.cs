@@ -16,7 +16,7 @@ namespace osuWikiTTT
         // string starts with uppercase letter, number, or 'osu!'
         private static readonly Regex firstCharRegex = new Regex("^(?:[A-Z]|\\d|osu!)");
 
-        public static void Initialize(string wikiDirPath)
+        public static void Initialize(string wikiDirPath, bool countArticles)
         {
             if (isInitialized)
                 return;
@@ -27,10 +27,10 @@ namespace osuWikiTTT
             if (rootDir.Name != "wiki")
                 throw new ArgumentException("Select the 'wiki' directory path!");
 
-            GetArticlesFromDir(rootDir);
+            GetArticlesFromDir(rootDir, countArticles);
         }
 
-        private static void GetArticlesFromDir(DirectoryInfo directory, Article parentArticle = null)
+        private static void GetArticlesFromDir(DirectoryInfo directory, bool countArticles, Article parentArticle = null)
         {
             var subDirectories = directory.GetDirectories().Where(d => firstCharRegex.IsMatch(d.Name)).ToList();
 
@@ -39,14 +39,24 @@ namespace osuWikiTTT
                 var newArticle = new Article(subDir.Name.Replace('_', ' '));
 
                 foreach (var file in subDir.EnumerateFiles("*.md"))
-                    newArticle.AddTranslation(Path.GetFileNameWithoutExtension(file.Name));
+                {
+                    string locale = Path.GetFileNameWithoutExtension(file.Name);
+
+                    if (countArticles)
+                    {
+                        int lineCount = File.ReadLines(file.FullName).Count();
+                        newArticle.AddTranslation(locale, lineCount);
+                    }
+                    else
+                        newArticle.AddTranslation(locale);
+                }
 
                 if (parentArticle != null)
                     newArticle.SetParentArticle(parentArticle);
 
                 allArticles.Add(newArticle);
 
-                GetArticlesFromDir(subDir, newArticle);
+                GetArticlesFromDir(subDir, countArticles, newArticle);
             }
         }
     }
