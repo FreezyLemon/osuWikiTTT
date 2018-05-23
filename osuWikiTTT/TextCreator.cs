@@ -1,84 +1,88 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 namespace osuWikiTTT
 {
     public class TextCreator
     {
-        private string output;
+        private readonly ToolOptions _options;
+        private readonly string _locale;
 
-        private ushort indentationAmount = 0;
-        private string indentation => string.Concat(Enumerable.Repeat(" ", indentationAmount));
+        private string _output;
+        private ushort _indentationAmount = 0;
 
-        public string CreateGFM(IEnumerable<Article> rootArticles, string locale)
+        protected string Indentation => string.Concat(Enumerable.Repeat(" ", _indentationAmount));
+
+        public TextCreator(ToolOptions options)
+        {
+            _options = options;
+            _locale = options.Culture?.TwoLetterISOLanguageName ?? string.Empty;
+        }
+
+        public string CreateGFM(IEnumerable<Article> rootArticles)
         {
             Reset();
-
-            var culture = new CultureInfo(locale);
 
             Write(
 $@"<!-- Automatically created by the osuWikiTTT -->
 
-# {culture.EnglishName} Wiki Completion
+# {_options.Culture.EnglishName} Wiki Completion
 
 ## Notes <!-- Delete these if you want to -->
 
-1. `- [ ] About (5)` -> The article 'About' has not been translated to {culture.EnglishName} yet, and the english version is 5 lines long.
-2. `- [x] Beatmap Editor (20/22)` -> The article 'Beatmap Editor' has been translated to {culture.EnglishName}. The translated version has 20 lines, and the english one has 22.
+1. `- [ ] About (5)` -> The article 'About' has not been translated to {_options.Culture.EnglishName} yet, and the english version is 5 lines long.
+2. `- [x] Beatmap Editor (20/22)` -> The article 'Beatmap Editor' has been translated to {_options.Culture.EnglishName}. The translated version has 20 lines, and the english one has 22.
 
 ## Article Listing
 
 "
             );
 
-            GFMLoop(rootArticles, locale);
+            GFMLoop(rootArticles);
 
-            return output;
+            return _output;
         }
 
-        private void GFMLoop(IEnumerable<Article> articles, string locale)
+        private void GFMLoop(IEnumerable<Article> articles)
         {
             foreach (var article in articles)
             {
-                var translation = locale != null ? article.Translations.SingleOrDefault(t => t.Language == locale) : null;
+                var translation = article.Translations.SingleOrDefault(t => t.Language == _locale);
                 char checkmark = (translation != null) ? 'x' : ' ';
 
-                string toWrite = $"- [{checkmark}] {article.Name}";
+                string line = $"- [{checkmark}] {article.Name}";
 
-                if (locale == "en")
-                    toWrite += $" ({translation.LineCount})";
-                else
+                if (!string.IsNullOrEmpty(_locale))
                 {
-                    // null check only for safety, it should never be null
-                    int englishLineCount = article.Translations.SingleOrDefault(t => t.Language == "en")?.LineCount ?? 0;
+                    var enTranslation = _locale != "en" ? article.Translations.SingleOrDefault(t => t.Language == "en") : translation;
+                    int enLineCount = enTranslation?.LineCount ?? 0;
 
                     if (translation == null)
-                        toWrite += $" ({englishLineCount})";
+                        line += $" ({enLineCount})";
                     else
-                        toWrite += $" ({translation.LineCount}/{englishLineCount})";
+                        line += $" ({enLineCount} -> {translation.LineCount})";
                 }
 
-                WriteLine(toWrite);
+                WriteLine(line);
 
-                if (article.SubArticles.Count > 0)
+                if (article.SubArticles.Any())
                 {
-                    indentationAmount += 4;
-                    GFMLoop(article.SubArticles, locale);
-                    indentationAmount -= 4;
+                    _indentationAmount += 4;
+                    GFMLoop(article.SubArticles);
+                    _indentationAmount -= 4;
                 }       
             }
         }
 
         private void Reset()
         {
-            indentationAmount = 0;
-            output = string.Empty;
+            _indentationAmount = 0;
+            _output = string.Empty;
         }
 
         private void Write(string text)
         {
-            output += indentation + text;
+            _output += Indentation + text;
         }
 
         private void WriteLine(string text) => Write(text + "\n");

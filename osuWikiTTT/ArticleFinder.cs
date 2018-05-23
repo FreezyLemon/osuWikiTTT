@@ -1,38 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace osuWikiTTT
 {
-    public static class ArticleFinder
+    public class ArticleFinder
     {
-        private static readonly List<Article> allArticles = new List<Article>();
-        public static IReadOnlyList<Article> Articles => allArticles;
-        public static IReadOnlyList<Article> RootArticles => allArticles.Where(a => a.ParentArticle == null).ToList();
+        public IReadOnlyList<Article> Articles => _allArticles;
 
-        private static bool isInitialized;
         // string starts with uppercase letter, number, or 'osu!'
         private static readonly Regex firstCharRegex = new Regex("^(?:[A-Z]|\\d|osu!)");
 
-        public static void Initialize(string wikiDirPath, bool countArticles)
+        private readonly ToolOptions _options;
+        private readonly List<Article> _allArticles = new List<Article>();
+
+        public ArticleFinder(ToolOptions options)
         {
-            if (isInitialized)
-                return;
-
-            isInitialized = true;
-
-            var rootDir = new DirectoryInfo(wikiDirPath);
-            if (rootDir.Name != "wiki")
-                throw new ArgumentException("Select the 'wiki' directory path!");
-
-            GetArticlesFromDir(rootDir, countArticles);
+            _options = options;
+            GetArticlesFromDir(options.WikiDir);
         }
 
-        private static void GetArticlesFromDir(DirectoryInfo directory, bool countArticles, Article parentArticle = null)
+        private void GetArticlesFromDir(DirectoryInfo directory, Article parentArticle = null)
         {
-            var subDirectories = directory.GetDirectories().Where(d => firstCharRegex.IsMatch(d.Name)).ToList();
+            var subDirectories = directory.GetDirectories().Where(d => firstCharRegex.IsMatch(d.Name));
 
             foreach (var subDir in subDirectories)
             {
@@ -40,23 +31,20 @@ namespace osuWikiTTT
 
                 foreach (var file in subDir.EnumerateFiles("*.md"))
                 {
-                    string locale = Path.GetFileNameWithoutExtension(file.Name);
+                    string fileLocale = Path.GetFileNameWithoutExtension(file.Name);
 
-                    if (countArticles)
-                    {
-                        int lineCount = File.ReadLines(file.FullName).Count();
-                        newArticle.AddTranslation(locale, lineCount);
-                    }
+                    if (_options.CountType == ArticleCountType.None || (_options.CountType == ArticleCountType.Smart && fileLocale != _options.Culture?.TwoLetterISOLanguageName))
+                        newArticle.AddTranslation(fileLocale);
                     else
-                        newArticle.AddTranslation(locale);
+                        newArticle.AddTranslation(fileLocale, File.ReadLines(file.FullName).Count());
                 }
 
                 if (parentArticle != null)
                     newArticle.SetParentArticle(parentArticle);
 
-                allArticles.Add(newArticle);
+                _allArticles.Add(newArticle);
 
-                GetArticlesFromDir(subDir, countArticles, newArticle);
+                GetArticlesFromDir(subDir, newArticle);
             }
         }
     }

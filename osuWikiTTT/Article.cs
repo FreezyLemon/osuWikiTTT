@@ -72,16 +72,13 @@ namespace osuWikiTTT
         public class Translation
         {
             internal Translation(string language, Article article)
-                : this(language, null, article)
             {
+                Language = language;
+                LineCount = null;
+                Article = article;
             }
 
             internal Translation(string language, int lineCount, Article article)
-                : this(language, (int?)lineCount, article)
-            {   
-            }
-
-            private Translation(string language, int? lineCount, Article article)
             {
                 Language = language;
                 LineCount = lineCount;

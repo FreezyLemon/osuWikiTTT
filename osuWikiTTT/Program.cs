@@ -1,80 +1,126 @@
 ﻿using Mono.Options;
 using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 
 namespace osuWikiTTT
 {
     public class Program
     {
-        private static string wikiDirectory;
-        private static string outputFilename = "result.md";
-        private static string locale = "en";
-        private static bool countArticles = false;
-
         public static void Main(string[] args)
         {
+            ToolOptions options;
             try
             {
-                ParseOptions(args);
+                options = ParseOptions(args);
             }
             catch (OptionException exc)
             {
                 Console.WriteLine("Error occurred when parsing the input arguments:");
                 Console.WriteLine(exc.Message);
-                // Console.WriteLine("Try the `--help` option for more information"); doesn't exist yet
+                Console.WriteLine("Try the `--help` option for more information");
                 return;
             }
 
-            Console.WriteLine($"Trying to read files/folders from {wikiDirectory}...");
-            ArticleFinder.Initialize(wikiDirectory, countArticles);
-            Console.WriteLine($"Found {ArticleFinder.Articles.Count} articles.");
+            Console.WriteLine($"Trying to read files/folders from {options.WikiDir.FullName}...");
+            var finder = new ArticleFinder(options);
+            Console.WriteLine($"Found {finder.Articles.Count} articles.");
             Console.WriteLine($"Creating GitHub-flavored Markdown from all articles...");
 
-            string GFMText = new TextCreator().CreateGFM(ArticleFinder.RootArticles, locale);
-            File.WriteAllText(outputFilename, GFMText);
-            Console.WriteLine($"Wrote resulting article structure to {outputFilename}");
+            string GFMText = new TextCreator(options).CreateGFM(finder.Articles.Where(a => a.ParentArticle == null));
+            File.WriteAllText(options.OutputFile.FullName, GFMText);
+            Console.WriteLine($"Wrote resulting article structure to {options.OutputFile.FullName}.");
         }
 
-        private static List<string> ParseOptions(string[] args)
+        private static ToolOptions ParseOptions(string[] args)
         {
-            var options = new OptionSet
+            DirectoryInfo wikiDir = null;
+            FileInfo outputFile = null;
+            CultureInfo culture = null;
+            ArticleCountType countType = 0;
+
+            bool shouldShowHelp = false;
+
+            var optionSet = new OptionSet
             {
                 {
-                    "<>|d|dir=", "the path of the wiki directory.", w =>
+                    "d|dir=", "the path of the wiki directory.", w =>
                     {
-                        if (string.IsNullOrWhiteSpace(w))
-                            throw new OptionException("Please enter a valid wiki directory!", "<>|d|dir=");
+                        try
+                        {
+                            wikiDir = new DirectoryInfo(w);
+                        }
+                        catch (Exception exc)
+                        {
+                            throw new OptionException("Unknown error when parsing the wiki directory path!", "dir", exc);
+                        }
 
-                        if (!new DirectoryInfo(w).Exists)
-                            throw new OptionException($"Wiki directory couldn't be found at {w}!", "<>|d|dir=");
+                        if (!wikiDir.Exists)
+                            throw new OptionException($"Wiki directory couldn't be found at {w}!", "dir");
 
-                        wikiDirectory = w;
+                        if (wikiDir.Name != "wiki")
+                            throw new OptionException($"{w} is not the right directory! Choose the 'wiki' directory (not osu-wiki)!", "dir");
                     }
                 },
                 {
-                    "o|output=", "the path of the output file, relative to the current directory. defaults to './result.md'.", o => outputFilename = o },
-                {
-                    "l|locale=", "the locale you want to check. Default is 'en'.", l =>
+                    "o|output=", "the path of the output file, relative to the current directory. defaults to './result.md'.", o =>
                     {
-                        if (string.IsNullOrWhiteSpace(l))
-                            return;
-
+                        try
+                        {
+                            outputFile = new FileInfo(o);
+                        }
+                        catch (Exception exc)
+                        {
+                            throw new OptionException("Unknown error when parsing the output file name!", "output", exc);
+                        }
+                    }
+                },
+                {
+                    "l|locale=", "the locale you want to check. Defaults to none, which will show an empty list.", l =>
+                    {
                         if (l.Length != 2)
-                            throw new OptionException("Locale names have to be 2 characters long!", "l|locale=");
+                            throw new OptionException("Locale names have to be 2 characters long!", "locale");
 
-                        locale = l;
+                        try
+                        {
+                            culture = new CultureInfo(l);
+                        }
+                        catch (Exception exc)
+                        {
+                            throw new OptionException("Unknown error when parsing the locale name!", "locale", exc);
+                        }
                     }
                 },
-                { "c|count", "specify this option to count the number of lines per article.", c => countArticles = c != null },
+                {
+                    "c|count", "specify this option to count the number of lines per article.", c =>
+                    {
+                        if (c != null)
+                            countType = c == "all" ? ArticleCountType.All : ArticleCountType.Smart;
+                        else
+                            countType = ArticleCountType.None;
+                    }
+                },
+                { "?|help", "show this help.", h => shouldShowHelp = h != null },
             };
 
-            var result = options.Parse(args);
+            optionSet.Parse(args);
 
-            if (string.IsNullOrEmpty(wikiDirectory))
-                throw new OptionException("Please specify at least one argument pointing to the wiki directory!", "<>|d|dir");
+            if (shouldShowHelp)
+            {
+                Console.WriteLine("Usage: osuWikiTTT.exe [options]");
+                optionSet.WriteOptionDescriptions(Console.Out);
 
-            return result;
+                Environment.Exit(0);
+            }
+
+            if (wikiDir == null)
+                throw new OptionException("Please specify a wiki directory via the -d option!", "dir");
+
+            if (outputFile == null)
+                outputFile = new FileInfo("result.md");
+
+            return new ToolOptions(wikiDir, outputFile, culture, countType);
         }
     }
 }
