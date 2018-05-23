@@ -4,6 +4,6 @@
     {
         None,
         All,
-        Smart, // locale-dependent, if possible
+        Smart, // locale-dependent, if possible. Will always count "en"
     }
 }

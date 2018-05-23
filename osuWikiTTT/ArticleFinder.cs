@@ -33,7 +33,8 @@ namespace osuWikiTTT
                 {
                     string fileLocale = Path.GetFileNameWithoutExtension(file.Name);
 
-                    if (_options.CountType == ArticleCountType.None || (_options.CountType == ArticleCountType.Smart && fileLocale != _options.Culture?.TwoLetterISOLanguageName))
+                    if (_options.CountType == ArticleCountType.None
+                    || (_options.CountType == ArticleCountType.Smart && fileLocale != _options.Culture?.TwoLetterISOLanguageName && fileLocale != "en"))
                         newArticle.AddTranslation(fileLocale);
                     else
                         newArticle.AddTranslation(fileLocale, File.ReadLines(file.FullName).Count());
