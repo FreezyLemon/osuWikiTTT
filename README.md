@@ -37,24 +37,16 @@ and so on.
 
 **Note: This program is currently configured to do exactly one thing: Find all articles in the specified directory and supply a text using GFM that shows all of them in an organized fashion.**
 
-The exact usage depends on the platform and type of framework used. Though .NET Core will work on all platforms, using .NET Framework is easier on Windows since you do not have to install the [.NET Core Runtime](https://www.microsoft.com/net/download/Windows/run).
+The tool currently only supports .NET Core. It is very easy to add .NET Framework support for Windows users (which is easier to use on Windows), but I'm currently the only one using this. If you want me to add support for the .NET Framework, shoot me a message and I'll do it.
 
 This tool will only take very simple input parameters:
 
 ### Usage examples
 
-#### .NET Framework (Windows)
-
-```batch
-osuWikiTTT.exe [-d] <wikiDir> [-o|--output <filepath>] [-l|--locale <localestring>]
-
-osuWikiTTT.exe -d E:\repos\osu-wiki\wiki -o "D:\DEV\osu-wiki\article-list.md"
-```
-
 #### .NET Core (Windows, Linux, macOS)
 
 ```bash
-dotnet osuWikiTTT.dll [-d] <wikiDir> [-o|--output <filepath>] [-l|--locale <localestring>]
+dotnet osuWikiTTT.dll [-d|--directory <wikiDir>] [-o|--output <filepath>] [-l|--locale <localestring>] [-c|--count <smart|all>]
 
 dotnet osuWikiTTT.dll /home/FreezyLemon/Desktop/osu-wiki/wiki -l de -o /home/FreezyLemon/Desktop/german-translation-report.md
 ```
