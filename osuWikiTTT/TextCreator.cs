@@ -25,17 +25,6 @@ namespace osuWikiTTT
 
             Write("<!-- Automatically created by the osuWikiTTT -->\n\n");
 
-            if (_options.Culture != null)
-                Write(
-$@"# {_options.Culture.EnglishName} Wiki Completion
-
-## Notes <!-- Delete these if you want to -->
-
-1. `- [ ] About (5)` -> The article 'About' has not been translated to {_options.Culture.EnglishName} yet, and the english version is 5 lines long.
-2. `- [x] Beatmap Editor (20/22)` -> The article 'Beatmap Editor' has been translated to {_options.Culture.EnglishName}. The translated version has 20 lines, and the english one has 22.
-
-");
-
             Write("## Article Listing\n\n");
 
             GFMLoop(rootArticles);
