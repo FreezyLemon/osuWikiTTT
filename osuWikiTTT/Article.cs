@@ -14,9 +14,7 @@ namespace osuWikiTTT
             Name = name;
         }
 
-        internal void AddTranslation(string locale, int lineCount) => Translations.Add(new Translation(locale, lineCount, this));
-
-        internal void AddTranslation(string locale) => Translations.Add(new Translation(locale, this));
+        internal void AddTranslation(string locale, int? lineCount, bool isOutdated) => Translations.Add(new Translation(this, locale, lineCount, isOutdated));
 
         internal void SetParentArticle(Article parentArticle)
         {
@@ -71,23 +69,18 @@ namespace osuWikiTTT
 
         public class Translation
         {
-            internal Translation(string language, Article article)
-            {
-                Language = language;
-                LineCount = null;
-                Article = article;
-            }
-
-            internal Translation(string language, int lineCount, Article article)
+            internal Translation(Article article, string language, int? lineCount, bool isOutdated)
             {
                 Language = language;
                 LineCount = lineCount;
                 Article = article;
+                IsOutdated = isOutdated;
             }
 
             public Article Article { get; }
             public string Language { get; }
             public int? LineCount { get; } = 0;
+            public bool IsOutdated { get; } = false;
             public string Filename => Language + ".md";
 
             public override string ToString() => $"[{Language}] {Article.Name}";

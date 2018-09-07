@@ -17,7 +17,10 @@ namespace osuWikiTTT
         public string Culture { get; set; } = "en";
 
         [Option('c', "count", Required = false)]
-        public string CountType { get; set; } = "none";
+        public bool Count { get; set; } = true;
+
+        [Option("check-outdated", Required = false)]
+        public bool OutdatedCheck { get; set; } = false;
     }
 
     public struct ToolOptions
@@ -60,23 +63,14 @@ namespace osuWikiTTT
                 throw new ArgumentException("Unknown error when parsing the locale name!");
             }
 
-            switch (args.CountType)
-            {
-                case "all":
-                    CountType = ArticleCountType.All;
-                    break;
-                case "smart":
-                    CountType = ArticleCountType.Smart;
-                    break;
-                default:
-                    CountType = ArticleCountType.None;
-                    break;
-            }
+            Count = args.Count;
+            OutdatedCheck = args.OutdatedCheck;
         }
 
-        public DirectoryInfo WikiDir { get; private set; }
-        public FileInfo OutputFile { get; private set; }
-        public CultureInfo Culture { get; private set; }
-        public ArticleCountType CountType { get; private set; }
+        public DirectoryInfo WikiDir { get; }
+        public FileInfo OutputFile { get; }
+        public CultureInfo Culture { get; }
+        public bool Count { get; }
+        public bool OutdatedCheck { get; }
     }
 }

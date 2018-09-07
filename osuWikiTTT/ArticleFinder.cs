@@ -33,11 +33,27 @@ namespace osuWikiTTT
                 {
                     string fileLocale = Path.GetFileNameWithoutExtension(file.Name);
 
-                    if (_options.CountType == ArticleCountType.None
-                    || (_options.CountType == ArticleCountType.Smart && fileLocale != _options.Culture?.TwoLetterISOLanguageName && fileLocale != "en"))
-                        newArticle.AddTranslation(fileLocale);
-                    else
-                        newArticle.AddTranslation(fileLocale, File.ReadLines(file.FullName).Count());
+                    if (_options.Count || _options.OutdatedCheck)
+                    {
+                        var allLines = File.ReadAllLines(file.FullName);
+                        int? length = null;
+                        bool isOutdated = false;
+                        
+                        if (_options.Count && fileLocale == _options.Culture?.TwoLetterISOLanguageName || fileLocale == "en")
+                        {
+                            length = allLines.Length;
+                        }
+
+                        if (_options.OutdatedCheck &&
+                            allLines[0].Trim() == "---" &&
+                            allLines[1].Trim() == "outdated: true" &&
+                            allLines[2].Trim() == "---")
+                        {
+                            isOutdated = true;
+                        }
+
+                        newArticle.AddTranslation(fileLocale, length, isOutdated);
+                    }
                 }
 
                 if (parentArticle != null)

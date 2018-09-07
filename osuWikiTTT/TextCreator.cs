@@ -52,15 +52,17 @@ $@"# {_options.Culture.EnglishName} Wiki Completion
 
                 string line = $"- [{checkmark}] {article.Name}";
 
-                if (!string.IsNullOrEmpty(_locale) && _options.CountType != ArticleCountType.None)
+                if (!string.IsNullOrEmpty(_locale) && _options.Count)
                 {
                     var enTranslation = _locale != "en" ? article.Translations.SingleOrDefault(t => t.Language == "en") : translation;
                     int enLineCount = enTranslation?.LineCount ?? 0;
 
                     if (translation == null)
-                        line += $" ({enLineCount})";
+                        line += $" (en: {enLineCount})";
+                    else if (!translation.IsOutdated)
+                        line += $" (en: {enLineCount}, {translation.Language}: {translation.LineCount})";
                     else
-                        line += $" ({enLineCount} -> {translation.LineCount})";
+                        line += $" (en: {enLineCount}, {translation.Language}: {translation.LineCount}, **outdated**)";
                 }
 
                 WriteLine(line);
