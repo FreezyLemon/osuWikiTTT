@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace osuWikiTTT
 {
@@ -14,7 +15,8 @@ namespace osuWikiTTT
             Name = name;
         }
 
-        internal void AddTranslation(string locale, int? lineCount, bool isOutdated) => Translations.Add(new Translation(this, locale, lineCount, isOutdated));
+        internal void AddTranslation(string locale, int lineCount, bool isOutdated)
+            => Translations.Add(new Translation(this, locale, lineCount, isOutdated));
 
         internal void SetParentArticle(Article parentArticle)
         {
@@ -28,9 +30,16 @@ namespace osuWikiTTT
             SubArticles.Add(subArticle);
         }
 
+        [DataMember]
         public string Name { get; }
+
+        [IgnoreDataMember]
         public Article ParentArticle { get; private set; }
+        
+        [DataMember]
         public List<Article> SubArticles { get; } = new List<Article>();
+
+        [DataMember]
         public List<Translation> Translations { get; } = new List<Translation>();
 
         #region Equals overload
@@ -69,7 +78,7 @@ namespace osuWikiTTT
 
         public class Translation
         {
-            internal Translation(Article article, string language, int? lineCount, bool isOutdated)
+            internal Translation(Article article, string language, int lineCount, bool isOutdated)
             {
                 Language = language;
                 LineCount = lineCount;
@@ -77,10 +86,19 @@ namespace osuWikiTTT
                 IsOutdated = isOutdated;
             }
 
+            [IgnoreDataMember]
             public Article Article { get; }
+
+            [DataMember]
             public string Language { get; }
-            public int? LineCount { get; } = 0;
-            public bool IsOutdated { get; } = false;
+
+            [DataMember]
+            public int LineCount { get; }
+
+            [DataMember]
+            public bool IsOutdated { get; }
+
+            [IgnoreDataMember]
             public string Filename => Language + ".md";
 
             public override string ToString() => $"[{Language}] {Article.Name}";

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Globalization;
 using System.IO;
 using CommandLine;
 
@@ -12,15 +11,6 @@ namespace osuWikiTTT
 
         [Option('o', "output", Required = true)]
         public string OutputFile { get; set; }
-
-        [Option('l', "locale", Required = false)]
-        public string Culture { get; set; } = "en";
-
-        [Option('c', "count", Required = false)]
-        public bool Count { get; set; } = true;
-
-        [Option("check-outdated", Required = false)]
-        public bool OutdatedCheck { get; set; } = false;
     }
 
     public struct ToolOptions
@@ -31,9 +21,9 @@ namespace osuWikiTTT
             {
                 WikiDir = new DirectoryInfo(args.WikiDir);
             }
-            catch (Exception exc)
+            catch (Exception)
             {
-                throw new ArgumentException("Unknown error when parsing the wiki directory path!", "dir", exc);
+                throw new ArgumentException("Unknown error when parsing the wiki directory path!");
             }
 
             if (!WikiDir.Exists)
@@ -50,27 +40,9 @@ namespace osuWikiTTT
             {
                 throw new ArgumentException("Unknown error when parsing the output file name!");
             }
-
-            if (args.Culture.Length != 2)
-                throw new ArgumentException("Locale names have to be 2 characters long!");
-
-            try
-            {
-                Culture = new CultureInfo(args.Culture);
-            }
-            catch (Exception)
-            {
-                throw new ArgumentException("Unknown error when parsing the locale name!");
-            }
-
-            Count = args.Count;
-            OutdatedCheck = args.OutdatedCheck;
         }
 
         public DirectoryInfo WikiDir { get; }
         public FileInfo OutputFile { get; }
-        public CultureInfo Culture { get; }
-        public bool Count { get; }
-        public bool OutdatedCheck { get; }
     }
 }
