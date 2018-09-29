@@ -48,6 +48,10 @@ namespace osuWikiTTT
                 {
                     string fileLocale = Path.GetFileNameWithoutExtension(file.Name);
 
+                    // some article directories have a readme in them
+                    if (fileLocale == "README")
+                        continue;
+
                     bool isOutdated = false;
 
                     var allLines = File.ReadAllLines(file.FullName);
@@ -62,10 +66,10 @@ namespace osuWikiTTT
                     newArticle.AddTranslation(fileLocale, allLines.Length, isOutdated);
                 }
 
-                if (parentArticle != null)
+                if (parentArticle == null)
+                    _allArticles.Add(newArticle);
+                else
                     newArticle.SetParentArticle(parentArticle);
-
-                _allArticles.Add(newArticle);
 
                 reloadArticlesFrom(subDir, newArticle);
             }

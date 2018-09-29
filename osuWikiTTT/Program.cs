@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using CommandLine;
 
 namespace osuWikiTTT
@@ -20,7 +21,9 @@ namespace osuWikiTTT
             Console.WriteLine($"Found {finder.Articles.Count} articles.");
             Console.WriteLine("Writing article list to output file...");
 
+            string path = options.OutputFile.Directory.FullName;
             File.WriteAllText(options.OutputFile.FullName, Jil.JSON.Serialize(finder.Articles));
+            File.WriteAllText(Path.Combine(path, "languages.json"), Jil.JSON.Serialize(finder.Articles.SelectMany(a => a.Translations.Select(t => t.Language)).Distinct()));
         }
     }
 }
