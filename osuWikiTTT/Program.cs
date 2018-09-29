@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using CommandLine;
 
 namespace osuWikiTTT
@@ -23,7 +22,7 @@ namespace osuWikiTTT
 
             string path = options.OutputFile.Directory.FullName;
             File.WriteAllText(options.OutputFile.FullName, Jil.JSON.Serialize(finder.Articles));
-            File.WriteAllText(Path.Combine(path, "languages.json"), Jil.JSON.Serialize(finder.Articles.SelectMany(a => a.Translations.Select(t => t.Language)).Distinct()));
+            File.WriteAllText(Path.Combine(path, "languages.json"), Jil.JSON.Serialize(finder.Languages));
         }
     }
 }

@@ -20,6 +20,10 @@ namespace osuWikiTTT
             }
         }
 
+        public IReadOnlyList<string> Languages => _languages;
+
+        private readonly List<string> _languages = new List<string>();
+
         // string starts with uppercase letter, number, or 'osu!'
         private static readonly Regex articleDirNameRegex = new Regex("^(?:[A-Z]|\\d|osu!)");
 
@@ -48,9 +52,12 @@ namespace osuWikiTTT
                 {
                     string fileLocale = Path.GetFileNameWithoutExtension(file.Name);
 
-                    // some article directories have a readme in them
+                    // some article directories have an additional readme in them
                     if (fileLocale == "README")
                         continue;
+
+                    if (!_languages.Contains(fileLocale))
+                        _languages.Add(fileLocale);
 
                     bool isOutdated = false;
 
