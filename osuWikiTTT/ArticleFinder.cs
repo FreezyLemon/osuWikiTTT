@@ -58,19 +58,22 @@ namespace osuWikiTTT
 
                     if (!_languages.Contains(fileLocale))
                         _languages.Add(fileLocale);
-
-                    bool isOutdated = false;
-
+                    
                     var allLines = File.ReadAllLines(file.FullName);
 
+                    TranslationStatus status;
                     if (allLines[0].Trim() == "---" &&
                         allLines[1].Trim() == "outdated: true" &&
                         allLines[2].Trim() == "---")
                     {
-                        isOutdated = true;
+                        status = TranslationStatus.Outdated;
+                    }
+                    else
+                    {
+                        status = TranslationStatus.UpToDate;
                     }
 
-                    newArticle.AddTranslation(fileLocale, allLines.Length, isOutdated);
+                    newArticle.AddTranslation(fileLocale, allLines.Length, status);
                 }
 
                 if (parentArticle == null)

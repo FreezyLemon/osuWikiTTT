@@ -15,8 +15,8 @@ namespace osuWikiTTT
             Name = name;
         }
 
-        internal void AddTranslation(string locale, int lineCount, bool isOutdated)
-            => Translations.Add(new Translation(this, locale, lineCount, isOutdated));
+        internal void AddTranslation(string locale, int lineCount, TranslationStatus status, params int[] prNumbers)
+            => Translations.Add(locale, new Translation(this, lineCount, status, prNumbers));
 
         internal void SetParentArticle(Article parentArticle)
         {
@@ -40,7 +40,7 @@ namespace osuWikiTTT
         public List<Article> SubArticles { get; } = new List<Article>();
 
         [DataMember]
-        public List<Translation> Translations { get; } = new List<Translation>();
+        public Dictionary<string, Translation> Translations { get; } = new Dictionary<string, Translation>();
 
         #region Equals overload
 
@@ -78,25 +78,47 @@ namespace osuWikiTTT
 
         public class Translation
         {
-            internal Translation(Article article, string language, int lineCount, bool isOutdated)
+            internal Translation(Article article, int lineCount, TranslationStatus status, int[] prNumbers)
             {
-                Language = language;
                 LineCount = lineCount;
                 Article = article;
-                IsOutdated = isOutdated;
+                Status = status;
+
+                if (!(prNumbers is null) && prNumbers.Length > 0)
+                {
+                    PullRequestNumbers.AddRange(prNumbers);
+                }
             }
 
             [IgnoreDataMember]
             public Article Article { get; }
 
-            [DataMember]
-            public string Language { get; }
+            /// <summary>
+            /// Mainly used for debugging, so this performance hit is ok.
+            /// </summary>
+            [IgnoreDataMember]
+            public string Language
+            {
+                get
+                {
+                    foreach (var (key, val) in Article.Translations)
+                    {
+                        if (val == this)
+                            return key;
+                    }
+
+                    return string.Empty;
+                }
+            }
 
             [DataMember]
             public int LineCount { get; }
 
             [DataMember]
-            public bool IsOutdated { get; }
+            public TranslationStatus Status { get; set; }
+
+            [DataMember]
+            public List<int> PullRequestNumbers { get; } = new List<int>();
 
             [IgnoreDataMember]
             public string Filename => Language + ".md";

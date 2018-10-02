@@ -17,8 +17,10 @@ namespace osuWikiTTT
         {
             Console.WriteLine($"Trying to read files/folders from {options.WikiDir.FullName}...");
             var finder = new ArticleFinder(options);
-            Console.WriteLine($"Found {finder.Articles.Count} articles.");
+            Console.WriteLine($"Found {finder.Articles.Count.ToString()} articles.");
             Console.WriteLine("Writing article list to output file...");
+
+            new ApiHelper().CheckPRsAsync(finder.Articles).Wait();
 
             string path = options.OutputFile.Directory.FullName;
             File.WriteAllText(options.OutputFile.FullName, Jil.JSON.Serialize(finder.Articles));
