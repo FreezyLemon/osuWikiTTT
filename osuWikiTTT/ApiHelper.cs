@@ -11,8 +11,11 @@ namespace osuWikiTTT
     {
         private const long osu_wiki_repo_id = 66639319;
 
-        // [DE], [FR], ... -> [??]
+        // [DE], [FR], ...
         private readonly Regex _languageTagRegex = new Regex(@"\[[a-zA-Z]{2}\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        // id.md, en.md, fr.md, ...
+        private readonly Regex _markdownFilenameRegex = new Regex(@"^[a-z]{2}\.md$", RegexOptions.Compiled);
 
         private readonly GitHubClient _client;
 
@@ -43,23 +46,30 @@ namespace osuWikiTTT
             var translationIssues = await _client.Issue.GetAllForRepository(osu_wiki_repo_id, req);
             var translationPRs = translationIssues.Where(i => i.PullRequest != null).ToList();
 
-            foreach (var pr in translationPRs)
+            foreach (var prAsIssue in translationPRs)
             {
-                var match = _languageTagRegex.Match(pr.Title);
+                var realPr = await _client.PullRequest.Get(osu_wiki_repo_id, prAsIssue.Number);
+
+                var match = _languageTagRegex.Match(prAsIssue.Title);
 
                 if (!match.Success)
                 {
                     continue;
                 }
 
-                var localeString = match.Groups[0].Value.TrimStart('[').TrimEnd(']').ToLowerInvariant();
+                if (prAsIssue.State.Value != ItemState.Open && !realPr.Merged)
+                {
+                    continue;
+                }
+
+                var localeString = match.Value.TrimStart('[').TrimEnd(']').ToLowerInvariant();
 
                 bool articleHandled = false;
                 if (match.Index == 0)
                 {
                     // If the PR has a title like "[ES] Rules", we can find the article just from that.
                     // A lot of the current PRs have a title like this, so this is worth a shot
-                    var potentialArticleTitle = pr.Title.Substring(4).Trim();
+                    var potentialArticleTitle = prAsIssue.Title.Substring(4).Trim();
 
                     var article = articles.FirstOrDefault(a => a.Name == potentialArticleTitle);
 
@@ -67,31 +77,76 @@ namespace osuWikiTTT
                     {
                         if (article.Translations.TryGetValue(localeString, out var translation))
                         {
-                            if (pr.State.Value == ItemState.Open)
+                            if (prAsIssue.State.Value == ItemState.Open)
                             {
                                 translation.Status = TranslationStatus.PROpen;
-                                translation.PullRequestNumbers.Add(pr.Number);
+                                translation.PullRequestNumbers.Add(prAsIssue.Number);
                             }
-                            else if (pr.PullRequest.Merged)
+                            else if (prAsIssue.PullRequest.Merged)
                             {
-                                translation.PullRequestNumbers.Add(pr.Number);
+                                translation.PullRequestNumbers.Add(prAsIssue.Number);
                             }
                         }
-                        else
+                        else if (prAsIssue.State.Value == ItemState.Open)
                         {
-                            article.AddTranslation(localeString, 0, TranslationStatus.PROpen, pr.Number);
+                            article.AddTranslation(localeString, 0, TranslationStatus.PROpen, prAsIssue.Number);
                         }
 
                         articleHandled = true;
                     }
                 }
-                
-                if (!articleHandled)
+
+                if (articleHandled)
                 {
-                    var files = await _client.PullRequest.Files(osu_wiki_repo_id, pr.Number);
-                    foreach (var file in files)
+                    continue;
+                }
+
+                var files = await _client.PullRequest.Files(osu_wiki_repo_id, prAsIssue.Number);
+                foreach (var file in files)
+                {
+                    var split = file.FileName.Split('/');
+                    if (split.Length < 3 || split[0] != "wiki" || !_markdownFilenameRegex.IsMatch(split.Last()))
                     {
-                        
+                        continue;
+                    }
+
+                    IEnumerable<Article> parentArticles = articles;
+                    Article article = null;
+                    for (int i = 1; i < split.Length - 1; ++i)
+                    {
+                        string articleName = split[i].Replace('_', ' ');
+                        article = parentArticles.FirstOrDefault(a => a.Name == articleName);
+
+                        if (article is null)
+                        {
+                            break;
+                        }
+
+                        parentArticles = article.SubArticles;
+                    }
+
+                    if (!(article is null))
+                    {
+                        articleHandled = true;
+
+                        if (!article.Translations.TryGetValue(localeString, out var translation))
+                        {
+                            if (prAsIssue.State.Value == ItemState.Open)
+                            {
+                                article.AddTranslation(localeString, 0, TranslationStatus.PROpen, prAsIssue.Number);
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+
+                        translation.PullRequestNumbers.Add(prAsIssue.Number);
+                            
+                        if (prAsIssue.State.Value == ItemState.Open)
+                        {
+                            translation.Status = TranslationStatus.PROpen;
+                        }
                     }
                 }
             }

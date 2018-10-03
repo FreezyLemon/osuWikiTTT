@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
 
@@ -88,6 +91,8 @@ namespace osuWikiTTT
                 {
                     PullRequestNumbers.AddRange(prNumbers);
                 }
+
+                LastChanged = getLastChanged();
             }
 
             [IgnoreDataMember]
@@ -120,10 +125,34 @@ namespace osuWikiTTT
             [DataMember]
             public List<int> PullRequestNumbers { get; } = new List<int>();
 
+            [DataMember]
+            public long LastChanged { get; set; }
+
             [IgnoreDataMember]
             public string Filename => Language + ".md";
 
             public override string ToString() => $"[{Language}] {Article.Name}";
+
+            private long getLastChanged()
+            {
+                var p = new Process
+                {
+                    StartInfo = new ProcessStartInfo("git", "log -n 1 --format=%at")
+                    {
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = true,
+                    }
+                };
+
+                p.Start();
+
+                string timestamp = p.StandardOutput.ReadLine();
+                p.StandardOutput.ReadToEnd();
+                return long.TryParse(timestamp, out long unix) ?
+                    unix :
+                    0;
+            }
         }
     }
 }
