@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 
@@ -19,7 +20,7 @@ namespace osuWikiTTT
         }
 
         internal void AddTranslation(string locale, int lineCount, TranslationStatus status, params int[] prNumbers)
-            => Translations.Add(locale, new Translation(this, lineCount, status, prNumbers));
+            => Translations.Add(locale, new Translation(this, locale, lineCount, status, prNumbers));
 
         internal void SetParentArticle(Article parentArticle)
         {
@@ -35,6 +36,23 @@ namespace osuWikiTTT
 
         [DataMember]
         public string Name { get; }
+
+        [IgnoreDataMember]
+        public string FullName
+        {
+            get
+            {
+                string temp = Name;
+                var article = this;
+                while (article.ParentArticle != null)
+                {
+                    temp = article.ParentArticle.Name + '/' + temp;
+                    article = article.ParentArticle;
+                }
+
+                return temp;
+            }
+        }
 
         [IgnoreDataMember]
         public Article ParentArticle { get; private set; }
@@ -81,10 +99,15 @@ namespace osuWikiTTT
 
         public class Translation
         {
-            internal Translation(Article article, int lineCount, TranslationStatus status, int[] prNumbers)
+            internal Translation()
             {
-                LineCount = lineCount;
+            }
+
+            internal Translation(Article article, string locale, int lineCount, TranslationStatus status, int[] prNumbers)
+            {
                 Article = article;
+                Language = locale;
+                LineCount = lineCount;
                 Status = status;
 
                 if (!(prNumbers is null) && prNumbers.Length > 0)
@@ -98,23 +121,8 @@ namespace osuWikiTTT
             [IgnoreDataMember]
             public Article Article { get; }
 
-            /// <summary>
-            /// Mainly used for debugging, so this performance hit is ok.
-            /// </summary>
             [IgnoreDataMember]
-            public string Language
-            {
-                get
-                {
-                    foreach (var (key, val) in Article.Translations)
-                    {
-                        if (val == this)
-                            return key;
-                    }
-
-                    return string.Empty;
-                }
-            }
+            public string Language { get; }
 
             [DataMember]
             public int LineCount { get; }
@@ -135,10 +143,13 @@ namespace osuWikiTTT
 
             private long getLastChanged()
             {
+                string filename = Path.Combine(Program.Options.WikiDir.FullName, Article.FullName.Replace(' ', '_'), Filename);
+
                 var p = new Process
                 {
-                    StartInfo = new ProcessStartInfo("git", "log -n 1 --format=%at")
+                    StartInfo = new ProcessStartInfo("git", $"log -n 1 --format=%at {filename}")
                     {
+                        WorkingDirectory = Program.Options.WikiDir.FullName,
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         CreateNoWindow = true,
@@ -148,7 +159,7 @@ namespace osuWikiTTT
                 p.Start();
 
                 string timestamp = p.StandardOutput.ReadLine();
-                p.StandardOutput.ReadToEnd();
+                string test = p.StandardOutput.ReadToEnd();
                 return long.TryParse(timestamp, out long unix) ?
                     unix :
                     0;

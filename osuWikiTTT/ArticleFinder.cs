@@ -48,6 +48,11 @@ namespace osuWikiTTT
             {
                 var newArticle = new Article(subDir.Name.Replace('_', ' '));
 
+                if (parentArticle == null)
+                    _allArticles.Add(newArticle);
+                else
+                    newArticle.SetParentArticle(parentArticle);
+
                 foreach (var file in subDir.EnumerateFiles("*.md"))
                 {
                     string fileLocale = Path.GetFileNameWithoutExtension(file.Name);
@@ -75,11 +80,6 @@ namespace osuWikiTTT
 
                     newArticle.AddTranslation(fileLocale, allLines.Length, status);
                 }
-
-                if (parentArticle == null)
-                    _allArticles.Add(newArticle);
-                else
-                    newArticle.SetParentArticle(parentArticle);
 
                 reloadArticlesFrom(subDir, newArticle);
             }

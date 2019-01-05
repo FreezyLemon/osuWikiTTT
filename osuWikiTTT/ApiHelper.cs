@@ -134,6 +134,7 @@ namespace osuWikiTTT
                             if (prAsIssue.State.Value == ItemState.Open)
                             {
                                 article.AddTranslation(localeString, 0, TranslationStatus.PROpen, prAsIssue.Number);
+                                translation = article.Translations[localeString];
                             }
                             else
                             {
